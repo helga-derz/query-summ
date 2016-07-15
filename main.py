@@ -10,7 +10,7 @@ ENG_ALF = 'abcdefghijklmnopqrstuvwxyz'
 
 
 def split_word(text):
-    return re.findall('\w+-*\w', text)
+    return re.findall('\w+-*\w*-*\w*', text)  # finding words which may include one or two hyphens
 
 
 def split_sentence(text):
@@ -35,7 +35,7 @@ def split_paragraph(text):
     else:
         return False
 
-text = 'Приве-т!\n\nЯ ждала тебя...'
+text = 'При-в-ет!\n\nЯ ждала тебя...'
 
 print(split_sentence(text))
 print(split_paragraph(text))
