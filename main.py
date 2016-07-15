@@ -29,18 +29,32 @@ def split_sentence(text):
 
 
 def split_sent(text):
+
     lt_sent = []  # list of sentences
+    cursor = 0
+
+    for edge in make_edges(text):
+        lt_sent.append(text[cursor:edge[0]+1])
+        cursor = edge[1] + 1
+    lt_sent.append(text[cursor:])
+
+    return lt_sent
+
+
+def make_edges(text):
     lt_punct = []  # indexes of each period
     curr_period = [0, 0]  # contains current pack of final punctuation
     EDGE = False
 
+    quotes = 0
+
     for ind, symbol in enumerate(text):
-        if not EDGE:
-            if symbol in FINAL_PUNCT:
-                EDGE = True
-                curr_period[0] = ind
-        else:
-            if symbol.isalpha():
+        quotes += 1 if symbol in "»«\"" else 0
+        if not EDGE and symbol in FINAL_PUNCT:
+            EDGE = True
+            curr_period[0] = ind
+        elif EDGE:
+            if symbol.isalpha() or (symbol in "»«\"" and quotes % 2 != 0):
                 if curr_period[1] == 0:
                     curr_period[0] = ind-1
                 else:
@@ -48,19 +62,12 @@ def split_sent(text):
                 EDGE = False
                 lt_punct.append(curr_period)
                 curr_period = [0, 0]
-
             elif symbol.isspace():
-                curr_period[1] = ind
-            elif symbol in FINAL_PUNCT:
-                curr_period[0] = ind
+                curr_period[1] = ind      # we clean sentences from useless whitespaces (these indexes will be missed)
+            elif symbol in FINAL_PUNCT or (symbol in "»«\"" and quotes % 2 == 0):
+                curr_period[0] = ind      # in case we have lots of final punct (like "!!!!!")
 
-    cursor = 0
-    for edge in lt_punct:
-        lt_sent.append(text[cursor:edge[0]+1])
-        cursor = edge[1] + 1
-    lt_sent.append(text[cursor:])
-
-    return lt_sent
+    return lt_punct
 
 
 def split_paragraph(text):
@@ -71,8 +78,7 @@ def split_paragraph(text):
         return False
 
 
-text = 'При-в-ет!!\n\n Я ждала тебя...'
+text = ' "При-в-ет!! "\n\n " Я ждала тебя..." '
+
 
 print(split_sent(text))
-print(split_paragraph(text))
-print(split_word(text))
