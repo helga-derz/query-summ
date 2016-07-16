@@ -33,7 +33,7 @@ def split_sent(text):
     lt_sent = []  # list of sentences
     cursor = 0
 
-    for edge in make_edges(text):
+    for edge in remove_edges_with_names(text):
         lt_sent.append(text[cursor:edge[0]+1])
         cursor = edge[1] + 1
     lt_sent.append(text[cursor:])
@@ -73,13 +73,30 @@ def make_edges(text):
 def find_names(text):
 
     name_edges = []
-    name = re.compile('\w{1,3}(\.) ?\w{1,3}(\.) ?\w+')
+    name = re.compile('\w{1,3}(\.) ?\w{0,3}(\.?) ?\w+')
     iterator = name.finditer(text)
 
     for match in iterator:
         name_edges.append(match.span())
 
     return name_edges
+
+
+def remove_edges_with_names(text):
+
+    name_edges = find_names(text)
+    fake_edges = []
+    edges = make_edges(text)
+
+    for edge in edges:
+        for name in name_edges:
+            if name[1] > edge[0] > name[0]:
+                fake_edges.append(edge)
+
+    for edge in fake_edges:
+        edges.remove(edge)
+
+    return edges
 
 
 def split_paragraph(text):
@@ -92,5 +109,4 @@ def split_paragraph(text):
 
 text = 'При-в-ет!! \n\n 12 часов я ждала тебя, А. В. Иванов... '
 
-print(find_names(text))
 print(split_sent(text))
