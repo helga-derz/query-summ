@@ -54,7 +54,7 @@ def make_edges(text):
             EDGE = True
             curr_period[0] = ind
         elif EDGE:
-            if symbol.isalpha() or (symbol in "»«\"" and quotes % 2 != 0):
+            if symbol.isalnum() or (symbol in "»«\"" and quotes % 2 != 0):
                 if curr_period[1] == 0:
                     curr_period[0] = ind-1
                 else:
@@ -70,6 +70,18 @@ def make_edges(text):
     return lt_punct
 
 
+def find_names(text):
+
+    name_edges = []
+    name = re.compile('\w{1,3}(\.) ?\w{1,3}(\.) ?\w+')
+    iterator = name.finditer(text)
+
+    for match in iterator:
+        name_edges.append(match.span())
+
+    return name_edges
+
+
 def split_paragraph(text):
     if '\n' in text:
         paragraphs = filter(None, text.split('\n'))
@@ -78,7 +90,7 @@ def split_paragraph(text):
         return False
 
 
-text = ' "При-в-ет!! "\n\n " Я ждала тебя..." '
+text = 'При-в-ет!! \n\n 12 часов я ждала тебя, А. В. Иванов... '
 
-
+print(find_names(text))
 print(split_sent(text))
