@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import re
 
 FINAL_PUNCT = '!.?'
@@ -73,11 +74,13 @@ def make_edges(text):
 def find_names(text):
 
     name_edges = []
-    name = re.compile('\w{1,3}(\.) ?\w{0,3}(\.?) ?\w+')
+    name = re.compile('[А-Я]\.\s?[А-Я]?\.?\s?[А-Я][а-я]+')
     iterator = name.finditer(text)
 
     for match in iterator:
         name_edges.append(match.span())
+
+    print(len(name_edges))
 
     return name_edges
 
@@ -107,6 +110,10 @@ def split_paragraph(text):
         return False
 
 
-text = 'При-в-ет!! \n\n 12 часов я ждала тебя, А. В. Иванов... '
+text = open('text.txt', 'r').read()
 
-print(split_sent(text))
+sents = ''
+for sent in split_sent(text):
+    sents += sent + '\n'
+
+open('res.txt', 'w').write(sents)
