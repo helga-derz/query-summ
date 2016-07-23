@@ -2,3 +2,4 @@
 .idea/misc.xml
 *.xml
 .idea/query-summ.iml
+*.pyc
