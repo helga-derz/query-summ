@@ -25,9 +25,9 @@ def make_bag_of_words(words):
     return bag
 
 
-def define_key_words(lt_words, key_numb):  # it needs a dictionary
+def define_key_words(lt_words, key_numb):
 
-    bag = make_bag_of_words(lt_words)
+    bag = make_bag_of_words(normalize(lt_words))
 
     key_words = []
 
@@ -45,6 +45,7 @@ def define_key_words(lt_words, key_numb):  # it needs a dictionary
 
     return key_words
 
-
-words = ['один', 'одна', 'одному', 'одной', 'три']
-print(normalize(words))
+'''
+words = ['трое', 'троих', 'тремя', 'один']
+print(define_key_words(words, 1))
+'''

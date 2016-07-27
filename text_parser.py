@@ -9,9 +9,15 @@ RUS_ALF = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
 ENG_ALF_CAP = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 ENG_ALF = 'abcdefghijklmnopqrstuvwxyz'
 
+conj = open('stuff/conjunctions/all.txt', 'r', encoding='utf-8').read().split('\n')
+interj = open('stuff/interjections.txt', 'r', encoding='utf-8').read().split('\n')
+particles = open('stuff/particles.txt', 'r', encoding='utf-8').read().split('\n')
+prepos = open('stuff/prepositions.txt', 'r', encoding='utf-8').read().split('\n')
+
 
 def split_word(text):
-    return re.findall('\w+-*\w*-*\w*', text)  # finding words which may include one or two hyphens
+    all_words = re.findall('\w+-*\w*-*\w*', text)  # finding words which may include one or two hyphens
+    return remove_auxiliary(all_words)
 
 
 def split_sentence(text):
@@ -110,6 +116,20 @@ def split_paragraph(text):
         return False
 
 
+def remove_auxiliary(lt_words):
+
+    text = ' '.join(lt_words)
+    stops = conj + interj + particles + prepos
+    for word in stops:
+        trash = ' ' + word + ' '
+        if trash in text:
+            text = text.replace(trash, ' ')
+
+    clean_words = filter(None, text.split(' '))
+
+    return list(clean_words)
+
+'''
 text = open('text.txt', 'r').read()
 
 sents = ''
@@ -117,3 +137,4 @@ for sent in split_sent(text):
     sents += sent + '\n'
 
 open('res.txt', 'w').write(sents)
+'''
