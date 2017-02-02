@@ -3,3 +3,5 @@
 *.xml
 .idea/query-summ.iml
 *.pyc
+text.txt
+res.txt

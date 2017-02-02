@@ -17,7 +17,7 @@ prepos = open('stuff/prepositions.txt', 'r', encoding='utf-8').read().split('\n'
 
 def split_word(text):
     all_words = re.findall('\w+-*\w*-*\w*', text)  # finding words which may include one or two hyphens
-    return remove_auxiliary(all_words)
+    return all_words
 
 
 def split_sentence(text):
@@ -86,7 +86,7 @@ def find_names(text):
     for match in iterator:
         name_edges.append(match.span())
 
-    print(len(name_edges))
+#    print(len(name_edges))
 
     return name_edges
 
@@ -113,7 +113,7 @@ def split_paragraph(text):
         paragraphs = filter(None, text.split('\n'))
         return list(paragraphs)
     else:
-        return False
+        return text
 
 
 def remove_auxiliary(lt_words):
@@ -129,12 +129,31 @@ def remove_auxiliary(lt_words):
 
     return list(clean_words)
 
-'''
+
+def complex_split_text(text):  # создает массивы с распарсенным текстом на трёх уровнях
+
+    bag = []
+
+    paragraphs = split_paragraph(text)
+
+    for paragraph in paragraphs:
+
+        bag_sent = []
+
+        sents = split_sent(paragraph)
+
+        for sent in sents:
+            words = split_word(sent)
+
+            bag_sent.append(words)
+
+        bag.append(bag_sent)
+
+    return bag
+
+
+
+
 text = open('text.txt', 'r').read()
 
-sents = ''
-for sent in split_sent(text):
-    sents += sent + '\n'
-
-open('res.txt', 'w').write(sents)
-'''
+print(complex_split_text(text))
