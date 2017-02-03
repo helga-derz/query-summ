@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import pymorphy2
+import math
+
 morph = pymorphy2.MorphAnalyzer()
 
 
@@ -44,6 +46,21 @@ def define_key_words(lt_words, key_numb):
         freq.pop(max_freq_ind)
 
     return key_words
+
+
+def idf(word, texts):      # тексты в виде списка слов
+    n = 0
+    for text in texts:
+        if word in text:
+            n += 1
+    return math.log(len(texts)/n, 10)
+
+
+def tf(word, text):     # текст в виде списка слов
+    return text.count(word)/len(text)
+
+
+# def tf-idf()
 
 '''
 words = ['трое', 'троих', 'тремя', 'один']

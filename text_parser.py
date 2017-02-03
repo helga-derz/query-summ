@@ -133,18 +133,14 @@ def remove_auxiliary(lt_words):
 def complex_split_text(text):  # создает массивы с распарсенным текстом на трёх уровнях
 
     bag = []
-
     paragraphs = split_paragraph(text)
 
     for paragraph in paragraphs:
-
         bag_sent = []
-
         sents = split_sent(paragraph)
 
         for sent in sents:
             words = split_word(sent)
-
             bag_sent.append(words)
 
         bag.append(bag_sent)
