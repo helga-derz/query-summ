@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 import re
+import pymorphy2
+import math
+
+
+morph = pymorphy2.MorphAnalyzer()
 
 FINAL_PUNCT = '!.?'
 
@@ -13,6 +18,16 @@ conj = open('stuff/conjunctions/all.txt', 'r', encoding='utf-8').read().split('\
 interj = open('stuff/interjections.txt', 'r', encoding='utf-8').read().split('\n')
 particles = open('stuff/particles.txt', 'r', encoding='utf-8').read().split('\n')
 prepos = open('stuff/prepositions.txt', 'r', encoding='utf-8').read().split('\n')
+
+
+def normalize(words):
+
+    norm_words = []
+    for word in words:
+        parse = morph.parse(word)[0]
+        norm_words.append(parse.normal_form)
+
+    return norm_words
 
 
 def split_word(text):
@@ -148,8 +163,50 @@ def complex_split_text(text):  # создает массивы с распарс
     return bag
 
 
+def word_freq(texts):  # возвращает словарь с частотами нормализованных слов
+    word_coll = []
+
+    for text in texts:
+        words = normalize(list(set(split_word(text))))
+        word_coll.extend(words)
+
+    dic = {}
+
+    for word in word_coll:
+        if word in dic:
+            dic[word] += 1
+        else:
+            dic[word] = 1
+
+    return dic
 
 
-text = open('text.txt', 'r').read()
+def idf(word, texts):      # тексты в виде списка слов
+    n = 0
+    for text in texts:
+        if word in text:
+            n += 1
+    return math.log(len(texts)/n, 10)
 
-print(complex_split_text(text))
+
+def tf(word, text):     # текст в виде списка слов
+    return text.count(word)/len(text)
+
+
+texts = []
+norm_texts = []
+
+for i in range(0, 5):
+    texts.append(open("texts/sport_"+str(i)+".txt", 'r', encoding='utf-8').read())
+
+for text in texts:
+    norm_texts.append(normalize(split_word(text)))
+
+dic = word_freq(texts)
+
+dic_idf = {}
+
+for word in dic.keys():
+    dic_idf[word] = idf(word, norm_texts)
+
+print(dic_idf)
