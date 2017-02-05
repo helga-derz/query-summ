@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import re
-import parser
+import parsers.parser_main as parser
 
 
 class Interfax(parser.SimpleSites):
-    main_site = 'http://www.interfax.ru'
+    main_site = 'http://www.interfax.ru/'
 
     timeout = 50
 
     # регулярка для ссылок на статьи
-    expr_for_article = re.compile('</span><a href="(.+)" id=')
+    expr_for_article = re.compile('</span><a href="(/sport/\d+)"><h3>')
 
     # регулярка для заголовков
     expr_for_text = re.compile('<title>.+</title>'), re.compile('<h1 class="textMTitle" itemprop="headline">.+</h1>')
@@ -19,13 +19,13 @@ class Interfax(parser.SimpleSites):
     expr_for_body = re.compile('itemprop="articleBody">(.+\.)</p>', re.DOTALL)
 
     # регулярка для времени
-    expr_for_time = re.compile('<div><span>([0-9]+:[0-9]+)</span><a')
+    expr_for_time = re.compile('<span>([0-9]+:[0-9]+)</span><a href="/sport/\d+')
 
     # получаем текст статьи
     def get_text(self, url):
 
         text = []
-        article = self.open_site(self.main_site + url, self.timeout).decode('cp1251').encode('utf-8')
+        article = self.open_site(self.main_site + url, self.timeout)#.decode('cp1251').encode('utf-8')
 
         for expr in self.expr_for_text:
             findings = expr.findall(article)
@@ -47,7 +47,7 @@ class Interfax(parser.SimpleSites):
             date = list_of_days[index][2] + '.' + list_of_days[index][1] + '.' + list_of_days[index][0]
 
             # общий сайт, где собраны все новости одного дня
-            site_list_daily_news = 'http://www.interfax.ru/news/' + year + '/' + month + '/' + day
+            site_list_daily_news = 'http://www.interfax.ru/sport/news/' + year + '/' + month + '/' + day
 
             # собираем статьи с первой страницы
             page = self.open_site(site_list_daily_news, self.timeout)

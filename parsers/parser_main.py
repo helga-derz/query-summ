@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import urllib2
+import urllib.request as urllib
 import datetime
 import logging
 
@@ -37,9 +37,8 @@ class Base:
 
     # нужно для открытия конкретных статей
     def open_site(self, url, timeout):
-        req = urllib2.Request(url, headers=self.hdr)
-        page = urllib2.urlopen(req, timeout=timeout)
-
+        req = urllib.Request(url, headers=self.hdr)
+        page = urllib.urlopen(req, timeout=timeout)
         return str(page.read())
 
     # возвращает список дат между первой и второй включительно
@@ -80,11 +79,9 @@ class Base:
 
 class SimpleSites(Base):
 
-    def __init__(self):
-        super().__init__()
-
     # проходим по спискам со статьями (метадата здесь)
     def scrolling_pages(self, page, date, main_site):
+
         list_daily_news = self.expr_for_article.findall(page)
         list_of_times = self.expr_for_time.findall(page)
         temp_list_news_metadata = []
@@ -101,7 +98,7 @@ class SimpleSites(Base):
 
                 temp_list_news_metadata.append(feed)
             except:
-                logging.error(list_daily_news[index_news])
+                pass     #logging.error(list_daily_news[index_news])
 
         return temp_list_news_metadata
 
