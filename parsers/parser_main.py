@@ -39,7 +39,7 @@ class Base:
     def open_site(self, url, timeout):
         req = urllib.Request(url, headers=self.hdr)
         page = urllib.urlopen(req, timeout=timeout)
-        return str(page.read())
+        return page.read().decode('cp1251')
 
     # возвращает список дат между первой и второй включительно
     def make_days_list(self, date1, date2):
