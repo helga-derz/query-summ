@@ -27,7 +27,7 @@ def normalize(words):
         parse = morph.parse(word)[0]
         norm_words.append(parse.normal_form)
 
-    return norm_words
+    return [w.lower() for w in norm_words]
 
 
 def split_word(text):
@@ -193,20 +193,67 @@ def tf(word, text):     # текст в виде списка слов
     return text.count(word)/len(text)
 
 
+def form_dic_idf():
+    f = open('idfs.txt', 'r', encoding='utf-8').read()
+    dic_idf = {}
+    for line in f.split('\n'):
+        dic_idf[line.split(' ')[0]] = float(line.split(' ')[1])
+    return dic_idf
+
+
+def idf_sent(sent, lt_idfs):
+
+    words = normalize(split_word(sent))
+    idf_s = 0
+    for word in words:
+        if word in lt_idfs:
+            idf_s += lt_idfs[word]
+        else:
+            pass
+    return idf_s
+
+
+'''
 texts = []
 norm_texts = []
 
-for i in range(0, 5):
-    texts.append(open("texts/sport_"+str(i)+".txt", 'r', encoding='utf-8').read())
+for i in range(0, 2951):
+    raw_text = open("sport/text_"+str(i)+".txt", 'r', encoding='utf-8')
+    raw_text.readline()
+    raw_text.readline()
+    raw_text.readline()
+    texts.append(raw_text.read())
 
+print('normaa')
 for text in texts:
     norm_texts.append(normalize(split_word(text)))
 
 dic = word_freq(texts)
+print(len(dic))
 
 dic_idf = {}
 
+n=0
 for word in dic.keys():
+    print(n)
     dic_idf[word] = idf(word, norm_texts)
+    n += 1
 
-print(dic_idf)
+t = ''
+for i in sorted(dic_idf):
+    t += i + ' ' + str(dic_idf[i]) + "\n"
+
+open('idfs.txt', 'w', encoding='utf-8').write(t)
+'''
+
+dic_idf = form_dic_idf()
+#print(dic_idf)
+
+text = open('sport/text_0.txt', 'r', encoding='utf-8')
+text.readline()
+text.readline()
+text.readline()
+text = text.read()
+
+for sent in split_sent(text):
+    print(sent + '\n' + str(idf_sent(sent, dic_idf)) + '\n-------------\n\n')
