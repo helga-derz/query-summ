@@ -210,7 +210,7 @@ def idf_sent(sent, lt_idfs):
             idf_s += lt_idfs[word]
         else:
             pass
-    return idf_s
+    return idf_s/len(words)
 
 
 '''
