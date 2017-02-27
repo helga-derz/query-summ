@@ -181,19 +181,22 @@ def word_freq(texts):  # возвращает словарь с частотам
     return dic
 
 
-def idf(word, texts):      # тексты в виде списка слов
+def count_idf(word, texts):   # тексты в виде списка слов
     n = 0
     for text in texts:
         if word in text:
             n += 1
-    return math.log(len(texts)/n, 10)
+    if n == 1:
+        return 0
+    else:
+        return math.log(len(texts)/n, 10)
 
 
 def tf(word, text):     # текст в виде списка слов
     return text.count(word)/len(text)
 
 
-def form_dic_idf():
+def form_dic_idf_from_file():   # формирует список idf из подготовленного файла
     f = open('idfs.txt', 'r', encoding='utf-8').read()
     dic_idf = {}
     for line in f.split('\n'):
@@ -201,19 +204,69 @@ def form_dic_idf():
     return dic_idf
 
 
-def idf_sent(sent, lt_idfs):
+def count_idf_sent(sent, file_idfs, new_idfs):  # считает idf предложения (сначала idf из файла, потом - из текста)
 
     words = normalize(split_word(sent))
     idf_s = 0
     for word in words:
-        if word in lt_idfs:
-            idf_s += lt_idfs[word]
+        if word in file_idfs:
+            idf_s += file_idfs[word]
         else:
-            pass
+            idf_s += new_idfs[word]
+
     return idf_s/len(words)
 
 
+def delete_tags(text):
+    expr_tag1 = re.compile('<[^>/]+>')  # открывающий тег
+    expr_tag2 = re.compile('</[^>]+>')  # закрывающий тег
+    text = re.sub(expr_tag1, '', text)
+    text = re.sub(expr_tag2, '.', text)
+    text = re.sub('[^.](\.\.)[^.]', '.', text)  # после удаления тегов могли появиться лишние точки
+    text = re.sub('[ \t]{2,}', '', text)  # удаляет лишние whitespaces
+    return text
+
+
+def prepare_text(text):
+    text = delete_tags(text)
+    print(text)
+    dic_idf = form_dic_idf_from_file()
+    words = normalize(split_word(text))
+    sents = split_sent(text)
+    for i in sents:
+        print('SENT')
+        print(i)
+        print('\n')
+    print('-----------------')
+    parags = split_paragraph(text)
+
+    new_idfs = {}
+    text_lt = [words]
+    for word in words:
+        new_idfs[word] = count_idf(word, text_lt)
+
+    idfs_sent = {}
+    for sent in sents:
+        idfs_sent[sent] = count_idf_sent(sent, dic_idf, new_idfs)
+
+    return idfs_sent
+
+
+text = open('sport/text_0.txt', 'r', encoding='utf-8')
+text.readline()
+text.readline()
+text.readline()
+text = text.read()
+
+idfs_sent = prepare_text(text)
+for i in idfs_sent.keys():
+    print(i)
+
+
+
 '''
+# ЗДЕСЬ СОЗДАЕМ СПИСОК IDF
+
 texts = []
 norm_texts = []
 
@@ -245,15 +298,3 @@ for i in sorted(dic_idf):
 
 open('idfs.txt', 'w', encoding='utf-8').write(t)
 '''
-
-dic_idf = form_dic_idf()
-#print(dic_idf)
-
-text = open('sport/text_0.txt', 'r', encoding='utf-8')
-text.readline()
-text.readline()
-text.readline()
-text = text.read()
-
-for sent in split_sent(text):
-    print(sent + '\n' + str(idf_sent(sent, dic_idf)) + '\n-------------\n\n')
