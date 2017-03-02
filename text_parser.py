@@ -250,6 +250,13 @@ def count_idfs_text(words, sents):
     return idfs_words, idfs_sent
 
 
+def make_vector(sents, idf_sent):
+    text_vectors = []
+    for sent in sents:
+        text_vectors.append([idfs_sent[sent]])
+    return text_vectors
+
+
 dic_idf = form_dic_idf_from_file()    # создаем словарь idf уже готовых текстов
 texts = []
 
@@ -261,14 +268,19 @@ for f in range(0, 3):
     text = text.read()
     texts.append(text)
 
+vectors = []   # каждый текст будет представлен в виде вектора
+
 for text in texts:
     words, sents, parags = prepare_text(text)
     idfs_words, idfs_sent = count_idfs_text(words, sents)
-    print('------------\nTEXT\n------------------')
-    for i in idfs_sent.keys():
-        print(i)
-        print(idfs_sent[i])
-        print('\n')
+    vectors.append(make_vector(sents, idfs_sent))
+
+
+
+
+
+
+
 
 
 '''
