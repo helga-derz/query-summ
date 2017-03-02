@@ -2,6 +2,7 @@
 import re
 import pymorphy2
 import math
+from nltk.tokenize import sent_tokenize
 
 
 morph = pymorphy2.MorphAnalyzer()
@@ -35,7 +36,7 @@ def split_word(text):
     return all_words
 
 
-def split_sentence(text):
+def split_sentence(text):   # Функция попроще
     lt_sent = []
     cursor = 0
 
@@ -222,46 +223,52 @@ def delete_tags(text):
     expr_tag2 = re.compile('</[^>]+>')  # закрывающий тег
     text = re.sub(expr_tag1, '', text)
     text = re.sub(expr_tag2, '.', text)
-    text = re.sub('[^.](\.\.)[^.]', '.', text)  # после удаления тегов могли появиться лишние точки
+    text = re.sub('\.\.', '.', text)  # после удаления тегов могли появиться лишние точки
     text = re.sub('[ \t]{2,}', '', text)  # удаляет лишние whitespaces
     return text
 
 
 def prepare_text(text):
-    text = delete_tags(text)
-    print(text)
-    dic_idf = form_dic_idf_from_file()
-    words = normalize(split_word(text))
-    sents = split_sent(text)
-    for i in sents:
-        print('SENT')
-        print(i)
-        print('\n')
-    print('-----------------')
-    parags = split_paragraph(text)
+    text = delete_tags(text)               # чистим текст от html
+    words = normalize(split_word(text))    # создаём список нормализованных слов
+    sents = sent_tokenize(text)            # делим текст на предложения
+    parags = split_paragraph(text)         # делим на параграфы
+    return words, sents, parags
 
-    new_idfs = {}
-    text_lt = [words]
-    for word in words:
-        new_idfs[word] = count_idf(word, text_lt)
+
+def count_idfs_text(words, sents):
+
+    idfs_words = {}
+    text_lt = [words]                      # считаем idf слов анализируемого текста
+    for word in words:                     # считаем idf так, будто у нас НЕТ таких слов в заготовленных текстах
+        idfs_words[word] = count_idf(word, text_lt)
 
     idfs_sent = {}
-    for sent in sents:
-        idfs_sent[sent] = count_idf_sent(sent, dic_idf, new_idfs)
+    for sent in sents:                     # считаем idf слов анализируемого текста
+        idfs_sent[sent] = count_idf_sent(sent, dic_idf, idfs_words)
 
-    return idfs_sent
+    return idfs_words, idfs_sent
 
 
-text = open('sport/text_0.txt', 'r', encoding='utf-8')
-text.readline()
-text.readline()
-text.readline()
-text = text.read()
+dic_idf = form_dic_idf_from_file()    # создаем словарь idf уже готовых текстов
+texts = []
 
-idfs_sent = prepare_text(text)
-for i in idfs_sent.keys():
-    print(i)
+for f in range(0, 3):
+    text = open('train/feed1/text' + str(f) + '.txt', 'r', encoding='utf-8')
+    text.readline()
+    text.readline()
+    text.readline()
+    text = text.read()
+    texts.append(text)
 
+for text in texts:
+    words, sents, parags = prepare_text(text)
+    idfs_words, idfs_sent = count_idfs_text(words, sents)
+    print('------------\nTEXT\n------------------')
+    for i in idfs_sent.keys():
+        print(i)
+        print(idfs_sent[i])
+        print('\n')
 
 
 '''
