@@ -2,23 +2,13 @@
 import re
 import pymorphy2
 import math
-from nltk.tokenize import sent_tokenize
+from nltk.tokenize import sent_tokenize, RegexpTokenizer
+from nltk.stem.snowball import RussianStemmer
+from itertools import combinations
 
 
 morph = pymorphy2.MorphAnalyzer()
-
-FINAL_PUNCT = '!.?'
-
-RUS_ALF_CAP = 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'
-RUS_ALF = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
-
-ENG_ALF_CAP = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-ENG_ALF = 'abcdefghijklmnopqrstuvwxyz'
-
-conj = open('stuff/conjunctions/all.txt', 'r', encoding='utf-8').read().split('\n')
-interj = open('stuff/interjections.txt', 'r', encoding='utf-8').read().split('\n')
-particles = open('stuff/particles.txt', 'r', encoding='utf-8').read().split('\n')
-prepos = open('stuff/prepositions.txt', 'r', encoding='utf-8').read().split('\n')
+lmtzr = RussianStemmer()
 
 
 def normalize(words):
@@ -36,150 +26,12 @@ def split_word(text):
     return all_words
 
 
-def split_sentence(text):   # Функция попроще
-    lt_sent = []
-    cursor = 0
-
-    for ind, symbol in enumerate(text):
-        if len(text) - 1 > ind > cursor:
-            if symbol in FINAL_PUNCT:
-                lt_sent.append(text[cursor:ind + 1])
-                cursor = ind + 1 if text[ind + 1] in ' \n\t' else ind  # if we have space between sentences or not
-        elif ind > cursor:
-            lt_sent.append(text[cursor:])
-
-    return lt_sent
-
-
-def split_sent(text):
-
-    lt_sent = []  # list of sentences
-    cursor = 0
-
-    for edge in remove_edges_with_names(text):
-        lt_sent.append(text[cursor:edge[0]+1])
-        cursor = edge[1] + 1
-    lt_sent.append(text[cursor:])
-
-    return lt_sent
-
-
-def make_edges(text):
-    lt_punct = []  # indexes of each period
-    curr_period = [0, 0]  # contains current pack of final punctuation
-    EDGE = False
-
-    quotes = 0
-
-    for ind, symbol in enumerate(text):
-        quotes += 1 if symbol in "»«\"" else 0
-        if not EDGE and symbol in FINAL_PUNCT:
-            EDGE = True
-            curr_period[0] = ind
-        elif EDGE:
-            if symbol.isalnum() or (symbol in "»«\"" and quotes % 2 != 0):
-                if curr_period[1] == 0:
-                    curr_period[0] = ind-1
-                else:
-                    curr_period[1] = ind-1
-                EDGE = False
-                lt_punct.append(curr_period)
-                curr_period = [0, 0]
-            elif symbol.isspace():
-                curr_period[1] = ind      # we clean sentences from useless whitespaces (these indexes will be missed)
-            elif symbol in FINAL_PUNCT or (symbol in "»«\"" and quotes % 2 == 0):
-                curr_period[0] = ind      # in case we have lots of final punct (like "!!!!!")
-
-    return lt_punct
-
-
-def find_names(text):
-
-    name_edges = []
-    name = re.compile('[А-Я]\.\s?[А-Я]?\.?\s?[А-Я][а-я]+')
-    iterator = name.finditer(text)
-
-    for match in iterator:
-        name_edges.append(match.span())
-
-#    print(len(name_edges))
-
-    return name_edges
-
-
-def remove_edges_with_names(text):
-
-    name_edges = find_names(text)
-    fake_edges = []
-    edges = make_edges(text)
-
-    for edge in edges:
-        for name in name_edges:
-            if name[1] > edge[0] > name[0]:
-                fake_edges.append(edge)
-
-    for edge in fake_edges:
-        edges.remove(edge)
-
-    return edges
-
-
 def split_paragraph(text):
     if '\n' in text:
         paragraphs = filter(None, text.split('\n'))
         return list(paragraphs)
     else:
         return text
-
-
-def remove_auxiliary(lt_words):
-
-    text = ' '.join(lt_words)
-    stops = conj + interj + particles + prepos
-    for word in stops:
-        trash = ' ' + word + ' '
-        if trash in text:
-            text = text.replace(trash, ' ')
-
-    clean_words = filter(None, text.split(' '))
-
-    return list(clean_words)
-
-
-def complex_split_text(text):  # создает массивы с распарсенным текстом на трёх уровнях
-
-    bag = []
-    paragraphs = split_paragraph(text)
-
-    for paragraph in paragraphs:
-        bag_sent = []
-        sents = split_sent(paragraph)
-
-        for sent in sents:
-            words = split_word(sent)
-            bag_sent.append(words)
-
-        bag.append(bag_sent)
-
-    return bag
-
-
-def word_freq(texts):  # возвращает словарь с частотами нормализованных слов
-    word_coll = []
-
-    for text in texts:
-        words = normalize(list(set(split_word(text))))
-        word_coll.extend(words)
-
-    dic = {}
-
-    for word in word_coll:
-        if word in dic:
-            dic[word] += 1
-        else:
-            dic[word] = 1
-
-    return dic
 
 
 def count_idf(word, texts):   # тексты в виде списка слов
@@ -250,14 +102,81 @@ def count_idfs_text(words, sents):
     return idfs_words, idfs_sent
 
 
-def make_vector(sents, idf_sent):
-    text_vectors = []
+def make_vectors(bag_words, sents):
+    vectors = []
     for sent in sents:
-        text_vectors.append([idfs_sent[sent]])
-    return text_vectors
+        vector = []
+        sent = [lmtzr.stem(word) for word in split_word(sent)]
+        for word in bag_words:
+            vector.append(sent.count(word))
+        vectors.append(vector)
+    return vectors
 
+
+def define_position_sent(parags):                 # формирует словарь с номером абзаца для каждого предложения
+
+    dic_sent_posit = {}
+    n = 1
+    for parag in parags:
+        sents = sent_tokenize(parag)
+        for sent in sents:
+            dic_sent_posit[sent] = n
+        n += 1
+
+    return dic_sent_posit
+
+
+def cosine_distance(a, b):
+    if len(a) != len(b):
+        return False
+    numerator = 0
+    denoma = 0
+    denomb = 0
+    for i in range(len(a)):
+        numerator += a[i]*b[i]
+        denoma += abs(a[i])**2
+        denomb += abs(b[i])**2
+    result = abs(round(1 - numerator / (math.sqrt(denoma)*math.sqrt(denomb)), 3))
+    return result
+
+
+def make_bag_words(texts):
+    bag = []
+    for text in texts:
+        words = [lmtzr.stem(word) for word in split_word(text)]
+        bag.extend(words)
+    return list(set(bag))
+
+
+def compare(bag_sents):
+    matrixx = []
+
+    for sent in bag_sents:
+        t = []
+        for sent1 in bag_sents:
+            t.append(cosine_distance(sent, sent1))
+        matrixx.append(t)
+    return matrixx
+
+
+def useless_sents(matrixx):
+    n = len(matrixx)
+    dlt = []
+    final = []
+    for strk in range(len(matrixx)):
+        if strk not in dlt:
+            for stl in range(n):
+                if matrixx[strk][stl] <= 0.8:
+                    dlt.append(stl)
+            n -= 1
+            final.append(strk)
+    return final
+
+
+#   НАЧАЛО
 
 dic_idf = form_dic_idf_from_file()    # создаем словарь idf уже готовых текстов
+texts_big_letters = []
 texts = []
 
 for f in range(0, 3):
@@ -266,14 +185,29 @@ for f in range(0, 3):
     text.readline()
     text.readline()
     text = text.read()
-    texts.append(text)
+    texts_big_letters.append(text)
+    texts.append(text.lower())
+
 
 vectors = []   # каждый текст будет представлен в виде вектора
+posits = []
+bag_words = make_bag_words(texts)   # список слов во всех текстах (стемминг, удаление повторений)
+texts_vectors = []
+bag_sents = []
+bag_sents_vectors = []
 
 for text in texts:
-    words, sents, parags = prepare_text(text)
+    words, sents, parags = prepare_text(text)     # слова, предложения, абзацы
     idfs_words, idfs_sent = count_idfs_text(words, sents)
-    vectors.append(make_vector(sents, idfs_sent))
+    posits.append(define_position_sent(parags))             # позиции предложений в тексте
+    sent_vectors = make_vectors(bag_words, sents)
+    texts_vectors.append(sent_vectors)    # тексты в виде предложений-векторов
+    bag_sents.extend(sents)
+    bag_sents_vectors.extend(sent_vectors)
+
+#print(compare(bag_sents_vectors))
+for i in useless_sents(compare(bag_sents_vectors)):
+    print(bag_sents[i])
 
 
 
@@ -283,37 +217,4 @@ for text in texts:
 
 
 
-'''
-# ЗДЕСЬ СОЗДАЕМ СПИСОК IDF
 
-texts = []
-norm_texts = []
-
-for i in range(0, 2951):
-    raw_text = open("sport/text_"+str(i)+".txt", 'r', encoding='utf-8')
-    raw_text.readline()
-    raw_text.readline()
-    raw_text.readline()
-    texts.append(raw_text.read())
-
-print('normaa')
-for text in texts:
-    norm_texts.append(normalize(split_word(text)))
-
-dic = word_freq(texts)
-print(len(dic))
-
-dic_idf = {}
-
-n=0
-for word in dic.keys():
-    print(n)
-    dic_idf[word] = idf(word, norm_texts)
-    n += 1
-
-t = ''
-for i in sorted(dic_idf):
-    t += i + ' ' + str(dic_idf[i]) + "\n"
-
-open('idfs.txt', 'w', encoding='utf-8').write(t)
-'''
