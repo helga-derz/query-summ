@@ -148,18 +148,18 @@ def make_bag_words(texts):
     return list(set(bag))
 
 
-def compare(bag_sents):
+def compare(bag_sents_vectors):
     matrixx = []
 
-    for sent in bag_sents:
+    for sent in bag_sents_vectors:
         t = []
-        for sent1 in bag_sents:
+        for sent1 in bag_sents_vectors:
             t.append(cosine_distance(sent, sent1))
         matrixx.append(t)
     return matrixx
 
 
-def useless_sents(matrixx):
+def delete_same_sents(matrixx):
     n = len(matrixx)
     dlt = []
     final = []
@@ -173,14 +173,21 @@ def useless_sents(matrixx):
     return final
 
 
+def delete_useless_sents(bag_sents):
+    new_bag = []
+    for sent in bag_sents:
+        if len(split_word(sent)) > 4:
+            new_bag.append(sent)
+    return new_bag
+
 #   НАЧАЛО
 
 dic_idf = form_dic_idf_from_file()    # создаем словарь idf уже готовых текстов
 texts_big_letters = []
 texts = []
 
-for f in range(0, 3):
-    text = open('train/feed1/text' + str(f) + '.txt', 'r', encoding='utf-8')
+for f in range(0, 7):
+    text = open('train/feed0/text' + str(f) + '.txt', 'r', encoding='utf-8')
     text.readline()
     text.readline()
     text.readline()
@@ -196,18 +203,27 @@ texts_vectors = []
 bag_sents = []
 bag_sents_vectors = []
 
+r_s = []
+
 for text in texts:
     words, sents, parags = prepare_text(text)     # слова, предложения, абзацы
     idfs_words, idfs_sent = count_idfs_text(words, sents)
+    filtered_sents = delete_useless_sents(sents)   # удаляем из списка предложений ненужные
+    bag_sents.extend(filtered_sents)
+
+    r_s.extend(sents)
+
     posits.append(define_position_sent(parags))             # позиции предложений в тексте
-    sent_vectors = make_vectors(bag_words, sents)
-    texts_vectors.append(sent_vectors)    # тексты в виде предложений-векторов
-    bag_sents.extend(sents)
+
+    sent_vectors = make_vectors(bag_words, filtered_sents)
+    texts_vectors.append(sent_vectors)                      # тексты в виде предложений-векторов
     bag_sents_vectors.extend(sent_vectors)
 
-#print(compare(bag_sents_vectors))
-for i in useless_sents(compare(bag_sents_vectors)):
+
+#print(list(set(r_s).difference(bag_sents)))
+for i in delete_same_sents(compare(bag_sents_vectors)):
     print(bag_sents[i])
+
 
 
 
